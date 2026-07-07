@@ -9,14 +9,14 @@ export async function addKid(req, res, next) {
 
     const client = await createSupabaseClient();
 
-    const {error} = await client.from('kids').insert({
+    const { error } = await client.from('kids').insert({
         full_name,
         user_id,
         classroom,
         is_confirmed
     });
 
-    if(error){
+    if (error) {
         throw new AppError("Could not add kid", 500, error);
     }
 
@@ -29,7 +29,7 @@ export async function getKidsOf(req, res, next) {
 
     const { data, error } = await client.from("kids").select("*").eq("user_id", user_id);
 
-    if(error){
+    if (error) {
         throw new AppError("Could not getting kids", 500, error);
     }
 
@@ -37,7 +37,7 @@ export async function getKidsOf(req, res, next) {
 }
 
 export async function getAllKids(req, res, next) {
-    if(req.user.role !== 'admin') {
+    if (req.user.role !== 'admin') {
         throw new AppError("You are not allowed to access this resource", 403, error);
     }
 
@@ -45,7 +45,7 @@ export async function getAllKids(req, res, next) {
 
     const { data, error } = await client.from("kids").select("*");
 
-    if(error){
+    if (error) {
         throw new AppError("Could not getting all kids", 500, error);
     }
 
@@ -53,5 +53,14 @@ export async function getAllKids(req, res, next) {
 }
 
 export async function callKid(req, res, next) {
-    
+    const client = await createSupabaseClient();
+    const kid_id = req.params.id;
+
+    const { data: kid, error } = await client.from("kids").select("id").eq("id", kid_id).single();
+
+    if(error || !kid){
+        throw new AppError("Kid not found", 404, error);
+    }
+
+    return res.status(200).json({message : "Call initiates validation passed"});
 }
