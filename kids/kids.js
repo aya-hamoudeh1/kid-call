@@ -56,11 +56,23 @@ export async function callKid(req, res, next) {
     const client = await createSupabaseClient();
     const kid_id = req.params.id;
 
+    const user_id = req.user.id;
+
+
     const { data: kid, error } = await client.from("kids").select("id").eq("id", kid_id).single();
 
     if(error || !kid){
         throw new AppError("Kid not found", 404, error);
     }
 
-    return res.status(200).json({message : "Call initiates validation passed"});
+    const {error: logError} = await client.from("call_logs").insert({
+        user_id : user_id,
+        kid_id: kid_id
+    });
+
+    if (logError) {
+        throw new AppError("Could not log call", 500, logError);
+    }
+
+    return res.status(200).json({message : "Call initiated"});
 }
