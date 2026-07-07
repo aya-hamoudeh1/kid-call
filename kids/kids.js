@@ -58,11 +58,19 @@ export async function callKid(req, res, next) {
 
     const user_id = req.user.id;
 
+    const { data: kid, error: kidError } = await client.from("kids").select("id").eq("id", kid_id).single();
 
-    const { data: kid, error } = await client.from("kids").select("id").eq("id", kid_id).single();
+    if (kidError || !kid) {
+        throw new AppError("Kid not found", 404, kidError);
+    }
 
-    if(error || !kid){
-        throw new AppError("Kid not found", 404, error);
+        const { error: callError } = await client.from("calls").insert({
+        user_id: user_id,
+        kid_id: kid_id
+    });
+
+    if (callError) {
+        throw new AppError("Could not initiate call record", 500, callError);
     }
 
     const {error: logError} = await client.from("call_logs").insert({
@@ -74,5 +82,8 @@ export async function callKid(req, res, next) {
         throw new AppError("Could not log call", 500, logError);
     }
 
-    return res.status(200).json({message : "Call initiated"});
+    return res.status(200).json({
+        message: "Call initiated and logged successfully",
+        kid_id: kid_id, user_id: user_id
+    });
 }
