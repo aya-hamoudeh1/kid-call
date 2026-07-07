@@ -56,39 +56,67 @@ export async function callKid(req, res, next) {
     const client = await createSupabaseClient();
     const kid_id = req.params.id;
 
-    const { data: kid, error } = await client.from("kids").select("id").eq("id", kid_id).single();
+    const user_id = req.user.id;
 
-    if(error || !kid){
-        throw new AppError("Kid not found", 404, error);
+    const { data: kid, error: kidError } = await client.from("kids").select("id").eq("id", kid_id).single();
+
+    if (kidError || !kid) {
+        throw new AppError("Kid not found", 404, kidError);
     }
 
-    return res.status(200).json({message : "Call initiates validation passed"});
+    const { error: callError } = await client.from("calls").insert({
+        user_id: user_id,
+        kid_id: kid_id
+    });
+
+    if (callError) {
+        throw new AppError("Could not initiate call record", 500, callError);
+    }
+
+    const { error: logError } = await client.from("call_logs").insert({
+        user_id: user_id,
+        kid_id: kid_id
+    });
+
+    if (logError) {
+        throw new AppError("Could not log call", 500, logError);
+    }
+
+    return res.status(200).json({
+        message: "Call initiated and logged successfully",
+        kid_id: kid_id, user_id: user_id
+    });
+
+    return res.status(200).json({ message: "Call initiates validation passed" });
 }
 
 
 export async function confirmKid(req, res, next) {
 
-    if(req.user.role !== 'admin'){
+    if (req.user.role !== 'admin') {
         throw new AppError("You are not allowed to access this resource", 403);
     }
 
     const client = await createSupabaseClient();
     const kid_id = req.params.id;
 
-    const {data , error} = await client.from("kids").update({
+    const { data, error } = await client.from("kids").update({
         is_confirmed: true
     }).eq('id', kid_id).select().single();
 
 
-    if(error){
+    if (error) {
         throw new AppError("Could not confirm kid", 500, error);
     }
 
-    if(!data){
+    if (!data) {
         throw new AppError("Kid not found", 404);
     }
 
-    return res.status(200).json({message : "Kid confirmed successfully",
+    return res.status(200).json({
+        message: "Kid confirmed successfully",
         kid: data
     });
+
+
 }
