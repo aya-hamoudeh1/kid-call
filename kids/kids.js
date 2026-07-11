@@ -74,8 +74,8 @@ export async function callKid(req, res, next) {
         throw new AppError("Could not initiate call record", 500, callError);
     }
 
-    const {error: logError} = await client.from("call_logs").insert({
-        user_id : user_id,
+    const { error: logError } = await client.from("call_logs").insert({
+        user_id: user_id,
         kid_id: kid_id
     });
 
@@ -87,4 +87,35 @@ export async function callKid(req, res, next) {
         message: "Call initiated and logged successfully",
         kid_id: kid_id, user_id: user_id
     });
+}
+
+
+export async function confirmKid(req, res, next) {
+
+    if (req.user.role !== 'admin') {
+        throw new AppError("You are not allowed to access this resource", 403);
+    }
+
+    const client = await createSupabaseClient();
+    const kid_id = req.params.id;
+
+    const { data, error } = await client.from("kids").update({
+        is_confirmed: true
+    }).eq('id', kid_id).select().single();
+
+
+    if (error) {
+        throw new AppError("Could not confirm kid", 500, error);
+    }
+
+    if (!data) {
+        throw new AppError("Kid not found", 404);
+    }
+
+    return res.status(200).json({
+        message: "Kid confirmed successfully",
+        kid: data
+    });
+
+
 }
