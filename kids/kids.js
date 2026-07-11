@@ -38,7 +38,7 @@ export async function getKidsOf(req, res, next) {
 
 export async function getAllKids(req, res, next) {
     if (req.user.role !== 'admin') {
-        throw new AppError("You are not allowed to access this resource", 403, error);
+        throw new AppError("You are not allowed to access this resource", 403);
     }
 
     const client = await createSupabaseClient();
@@ -59,6 +59,7 @@ export async function callKid(req, res, next) {
     const user_id = req.user.id;
 
     const { data: kid, error: kidError } = await client.from("kids").select("id").eq("id", kid_id).single();
+
 
     if (kidError || !kid) {
         throw new AppError("Kid not found", 404, kidError);
@@ -86,8 +87,6 @@ export async function callKid(req, res, next) {
         message: "Call initiated and logged successfully",
         kid_id: kid_id, user_id: user_id
     });
-
-    return res.status(200).json({ message: "Call initiates validation passed" });
 }
 
 
